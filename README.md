@@ -18,4 +18,4 @@ When you use ContextualSubspaceVQE in a publication or other work, please cite a
 
 ## How to use
 
-Take a look through CS_VQE_how_to_use.ipynb for examples of the usage of all of the main functions.
+Take a look through [CS_VQE_how_to_use.ipynb](https://github.com/wmkirby1/ContextualSubspaceVQE/blob/main/CS_VQE_how_to_use.ipynb) for examples of the usage of all of the main functions.
