@@ -666,16 +666,18 @@ def exp_vals(fn_form,ep_state):
             out[t[3]] = np.real((reduce(lambda x, y: x * y, [ep_state[0][i] for i in t[1]]))*(reduce(lambda x, y: x * y, [ep_state[1][i] for i in t[2]])))
     return out
 
+
 # Given ham (the full Hamiltonian), model (the quasi-quantized model for the noncontextual part),
 # fn_form (the output of energy_function_form(ham_noncon,model)), and order (a list specifying the order in which to remove the qubits),
-# returns a list of approximations to the ground state energy of the full Hamiltonian,
-# whose ith element is the approximation obtained by simulating i qubits on the quantum computer,
+# returns a list whose elements are the reduced quantum search Hamiltonians for contextual subspace VQE,
+# where the ith element corresponds to simulating i qubits on the quantum computer,
 # with the remaining qubits simulated by the noncontextual approximation.
-# (Hence the 0th element is the pure noncontextual approximation.)
-# If order is shorter than the total number of qubits, only approximations using qubit removals
-# in order are simulated.
-def contextual_subspace_approximations(ham,model,fn_form,ep_state,order):
-    
+# The noncontextual ground state energy is included in the constant term of each Hamiltonian,
+# so the complete CS-VQE approximation is obtained by finding the ground state energy of each.
+# If order is shorter than the total number of qubits, only Hamiltonians up to the the number of qubits
+# reflected by order are returned.
+def get_reduced_hamiltonians(ham,model,fn_form,ep_state,order):
+
     rotations, diagonal_set, vals = diagonalize_epistemic(model,fn_form,ep_state)
     
     n_q = len(diagonal_set[0])
@@ -736,27 +738,117 @@ def contextual_subspace_approximations(ham,model,fn_form,ep_state,order):
                     ham_red[t_red] = ham_red[t_red] + ham_rotated[t]*sgn
                 else:
                     ham_red[t_red] = ham_rotated[t]*sgn
-    
-        if n_q-len(diagonal_set) == 0:
-            assert(len(list(ham_red.keys())) == 1)
-            assert(list(ham_red.keys())[0] == '')
-            out.append(list(ham_red.values())[0].real)
-    
-        else:
-            # find lowest eigenvalue of reduced Hamiltonian
-            ham_red_sparse = hamiltonian_to_sparse(ham_red)
-            if n_q-len(diagonal_set) <= 4:
-                out.append(min(np.linalg.eigvalsh(ham_red_sparse.toarray())))
-            else:
-#                 print(f'  computing restricted ground state for {n_q-len(diagonal_set)} qubits...')
-                out.append(sp.sparse.linalg.eigsh(ham_red_sparse, which='SA', k=1)[0][0])
-        
+
+        out.append(ham_red)
+
         if order:
             # Drop a qubit:
             i = order[0]
             order.remove(i)
             diagonal_set = diagonal_set[:i]+diagonal_set[i+1:]
             vals = vals[:i]+vals[i+1:]
+    
+    return out
+
+
+# Given ham (the full Hamiltonian), model (the quasi-quantized model for the noncontextual part),
+# fn_form (the output of energy_function_form(ham_noncon,model)), and order (a list specifying the order in which to remove the qubits),
+# returns a list of approximations to the ground state energy of the full Hamiltonian,
+# whose ith element is the approximation obtained by simulating i qubits on the quantum computer,
+# with the remaining qubits simulated by the noncontextual approximation.
+# (Hence the 0th element is the pure noncontextual approximation.)
+# If order is shorter than the total number of qubits, only approximations using qubit removals
+# in order are simulated.
+def contextual_subspace_approximations(ham,model,fn_form,ep_state,order):
+    
+    # rotations, diagonal_set, vals = diagonalize_epistemic(model,fn_form,ep_state)
+    
+    # n_q = len(diagonal_set[0])
+    
+    # order_len = len(order)
+    
+    # vals = list(vals)
+    
+    # # rectify order
+    # for i in range(len(order)):
+    #     for j in range(i):
+    #         if order[j] < order[i]:
+    #             order[i] -= 1
+    
+    # out = []
+    
+    # for k in range(order_len+1):
+    
+    #     ham_rotated = deepcopy(ham)
+    
+    #     for r in rotations: # rotate the full Hamiltonian to the basis with diagonal noncontextual generators
+    #         ham_next = {}
+    #         for t in ham_rotated.keys():
+    #             t_set_next = apply_rotation(r,t)
+    #             for t_next in t_set_next.keys():
+    #                 if t_next in ham_next.keys():
+    #                     ham_next[t_next] = ham_next[t_next] + t_set_next[t_next]*ham_rotated[t]
+    #                 else:
+    #                     ham_next[t_next] = t_set_next[t_next]*ham_rotated[t]
+    #         ham_rotated = deepcopy(ham_next)
+       
+    #     z_indices = []
+    #     for d in diagonal_set:
+    #         for i in range(n_q):
+    #             if d[i] == 'Z':
+    #                 z_indices.append(i)
+        
+    #     ham_red = {}
+    
+    #     for t in ham_rotated.keys():
+        
+    #         sgn = 1
+        
+    #         for j in range(len(diagonal_set)): # enforce diagonal generator's assigned values in diagonal basis
+    #             z_index = z_indices[j]
+    #             if t[z_index] == 'Z':
+    #                 sgn = sgn*vals[j]
+    #             elif t[z_index] != 'I':
+    #                 sgn = 0
+        
+    #         if sgn != 0:
+    #             # construct term in reduced Hilbert space
+    #             t_red = ''
+    #             for i in range(n_q):
+    #                 if not i in z_indices:
+    #                     t_red = t_red + t[i]
+    #             if t_red in ham_red.keys():
+    #                 ham_red[t_red] = ham_red[t_red] + ham_rotated[t]*sgn
+    #             else:
+    #                 ham_red[t_red] = ham_rotated[t]*sgn
+
+    #     if order:
+    #         # Drop a qubit:
+    #         i = order[0]
+    #         order.remove(i)
+    #         diagonal_set = diagonal_set[:i]+diagonal_set[i+1:]
+    #         vals = vals[:i]+vals[i+1:]
+
+    reduced_hamiltonians = get_reduced_hamiltonians(ham,model,fn_form,ep_state,order)
+
+    n_q = len(list(ham.keys())[0])
+
+    out = []
+
+    for ham_red in reduced_hamiltonians:
+    
+        if len(list(ham_red.keys())) == 1:
+            assert(list(ham_red.keys())[0] == '')
+            out.append(list(ham_red.values())[0].real)
+    
+        else:
+            # find lowest eigenvalue of reduced Hamiltonian
+            ham_red_sparse = hamiltonian_to_sparse(ham_red)
+            if len(list(ham_red.keys())) <= 6:
+                out.append(min(np.linalg.eigvalsh(ham_red_sparse.toarray())))
+            else:
+#                 print(f'  computing restricted ground state for {n_q-len(diagonal_set)} qubits...')
+                out.append(sp.sparse.linalg.eigsh(ham_red_sparse, which='SA', k=1)[0][0])
 
     return out
 
