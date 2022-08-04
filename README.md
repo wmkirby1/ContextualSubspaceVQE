@@ -2,6 +2,8 @@
 
 ContextualSubspaceVQE provides a classical simulation implementation of the hybrid quantum-classical algorithm called *contextual subspace variational quantum eigensolver* (CS-VQE), as described in [https://arxiv.org/abs/2011.10027](https://arxiv.org/abs/2011.10027).
 
+## A more up-to-date implementation of CS-VQE can be found at [https://github.com/UCL-CCS/symmer](https://github.com/UCL-CCS/symmer).
+
 ## What is included
 
 - Test for contextuality of a Hamiltonian.
