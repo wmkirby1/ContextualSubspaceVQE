@@ -16,7 +16,7 @@ ContextualSubspaceVQE provides a classical simulation implementation of the hybr
 
 When you use ContextualSubspaceVQE in a publication or other work, please cite as:
 
-> William M. Kirby, Andrew Tranter, and Peter J. Love, *Contextual Subspace Variational Quantum Eigensolver*, arXiv preprint (2020), [arXiv:2011.10027](https://arxiv.org/abs/2011.10027).
+> William M. Kirby, Andrew Tranter, and Peter J. Love, *Contextual Subspace Variational Quantum Eigensolver*, [Quantum 5, 456](https://doi.org/10.22331/q-2021-05-14-456) (2021).
 
 ## How to use
 
